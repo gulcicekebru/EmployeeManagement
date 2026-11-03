@@ -1,10 +1,21 @@
 using EmployeeManager.Components;
+using EmployeeManager.Data;
+using EmployeeManager.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+//Database işlemleri (buildten önce olmalı)
+builder.Services.AddDbContext<AppDbContext>(
+    options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+    );
+//Employee service için de dependency injection
+builder.Services.AddScoped<EmployeeService>();
+
+
 
 var app = builder.Build();
 

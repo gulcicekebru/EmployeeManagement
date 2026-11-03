@@ -1,16 +1,116 @@
-﻿<PageTitle>Employees</PageTitle>
+﻿@page "/employees"
+@rendermode InteractiveServer
+@using EmployeeManager.Services
+@using EmployeeManager.Models
+@inject EmployeeService employeeService
+
+<PageTitle>Employees</PageTitle>
 
 <h3>Employee Management</h3>
 
 <p>Total Employee Count: @employeeCount</p>
 
-<button onclick="AddEmployee">Add Employee</button>
+<button @onclick="RemoveEmployee">Remove Employee</button>
+
+<form @onsubmit="AddEmployee" @onsubmit:preventDefault>
+    <div>
+        <label>Employee Name:</label>
+        <input @bind="employeeName"/>
+    </div>
+    <div>
+        <label>Employee Department:</label>
+        <input @bind="employeeDepartment" />
+    </div>
+    @if (!string.IsNullOrWhiteSpace(errorMessage)){
+        <div>
+            <label>@errorMessage</label>
+        </div>
+    }
+    <div>
+        <input type="submit" value="Add Employee" />
+    </div>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Department</th>
+            <th>Hire Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var employee in employees)
+        {
+            <tr>
+                <td>@employee.Id</td>
+                <td>@employee.Name</td>
+                <td>@employee.Department</td>
+                <td>@employee.HireDate</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+
+
 
 @code {
     private int employeeCount = 0;
 
-    private void AddEmployee()
+    private string employeeName="";
+    private string employeeDepartment="";
+    private string errorMessage = "";
+    private List<Employee> employees = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        employeeCount++;
+        employeeCount = await employeeService.GetEmployeeCountAsync();
+        employees = await employeeService.GetEmployeesAsync();
+    }
+
+    private async Task AddEmployee()
+    {
+        if (!string.IsNullOrWhiteSpace(employeeName) && !string.IsNullOrWhiteSpace(employeeDepartment))
+        {
+            Employee employee = new Employee
+                {
+                    Name = employeeName,
+                    Department = employeeDepartment,
+                    HireDate = DateTime.Today
+                };
+
+            try
+            {
+                await employeeService.AddEmployeeAsync(employee);
+                employeeCount = await employeeService.GetEmployeeCountAsync();
+                employeeName = "";
+                employeeDepartment = "";
+                errorMessage = "";
+            }
+            catch(ArgumentException ex)
+            {
+                errorMessage = ex.Message;
+            }
+            catch(Exception ex)
+            {
+                errorMessage = "An unexpected error occured while saving.";
+                Console.WriteLine(ex);
+            }
+
+        }
+        else
+        {
+            errorMessage = "Please fill in all fields.";
+        }
+    }
+
+    private void RemoveEmployee()
+    {
+        if (employeeCount > 0)
+        {
+            employeeCount--;
+        }
     }
 }
