@@ -1,0 +1,16 @@
+﻿<PageTitle>Employees</PageTitle>
+
+<h3>Employee Management</h3>
+
+<p>Total Employee Count: @employeeCount</p>
+
+<button onclick="AddEmployee">Add Employee</button>
+
+@code {
+    private int employeeCount = 0;
+
+    private void AddEmployee()
+    {
+        employeeCount++;
+    }
+}
