@@ -10,7 +10,6 @@
 
 <p>Total Employee Count: @employeeCount</p>
 
-<button @onclick="RemoveEmployee">Remove Employee</button>
 
 <form @onsubmit="AddEmployee" @onsubmit:preventDefault>
     <div>
@@ -31,6 +30,24 @@
     </div>
 </form>
 
+
+    <div>
+        <label>Search:</label>
+        <input @bind="searchContent" placeholder="Search employees..."/>
+        <button @onclick="() => SearchEmployee(searchContent)">Search</button>
+        
+    @if (!string.IsNullOrWhiteSpace(searchMessage))
+    {
+        <p>@searchMessage</p>
+    }
+
+    </div>
+
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p class="text-danger">@errorMessage</p>
+}
 <table>
     <thead>
         <tr>
@@ -45,10 +62,47 @@
         {
             <tr>
                 <td>@employee.Id</td>
-                <td>@employee.Name</td>
-                <td>@employee.Department</td>
-                <td>@employee.HireDate</td>
-            </tr>
+                <td>
+                    @if(employeeIdToUpdate == employee.Id)
+                    {
+                        <input @bind="editName" />
+                    }
+                    else
+                    {
+                        @employee.Name
+                    }
+                    
+                </td>
+                <td>
+                    @if(employeeIdToUpdate == employee.Id){
+                        <input @bind="editDepartment"/>
+                    }
+                    else
+                    {
+                        @employee.Department
+                        
+                    }
+                </td>
+                <td>@employee.HireDate.ToString("dd.MM.yyyy")</td>
+                <td>@if(employeeIdToUpdate == employee.Id)
+                {
+                    <button @onclick="() => UpdateEmployee(employee.Id, editName, editDepartment)">Save</button>
+                    <button @onclick="() => employeeIdToUpdate = null">Cancel</button>
+                }
+                else
+                {
+                    <button @onclick="() => StartEdit(employee)">Edit</button>
+                }
+                
+                </td>
+                <button @onclick="() => employeeIdToDelete = employee.Id ">Delete</button>
+                @if (employeeIdToDelete == employee.Id)
+                {
+                    <label>Are you sure?</label>
+                    <button @onclick="() => DeleteEmployee(employee.Id)">Confirm</button>
+                    <button @onclick="() => employeeIdToDelete = null">Cancel</button>
+                }
+            </tr>    
         }
     </tbody>
 </table>
@@ -62,6 +116,14 @@
     private string employeeName="";
     private string employeeDepartment="";
     private string errorMessage = "";
+    private int? employeeIdToDelete;
+    private int? employeeIdToUpdate;
+    private string? editName = "";
+    private string? editDepartment = "";
+    private string? searchContent = "";
+    private bool hasSearched = false;
+    private string searchMessage = "";
+
     private List<Employee> employees = new();
 
     protected override async Task OnInitializedAsync()
@@ -85,6 +147,8 @@
             {
                 await employeeService.AddEmployeeAsync(employee);
                 employeeCount = await employeeService.GetEmployeeCountAsync();
+                employees = await employeeService.GetEmployeesAsync();
+
                 employeeName = "";
                 employeeDepartment = "";
                 errorMessage = "";
@@ -106,11 +170,79 @@
         }
     }
 
-    private void RemoveEmployee()
+    private async Task DeleteEmployee(int id)
     {
-        if (employeeCount > 0)
+        try
         {
-            employeeCount--;
+            await employeeService.DeleteEmployeeAsync(id);
+
+            employees = await employeeService.GetEmployeesAsync();
+            employeeCount = await employeeService.GetEmployeeCountAsync();
+
+            employeeIdToDelete = null;
+            errorMessage = "";
         }
+        catch(KeyNotFoundException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        catch(Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private void StartEdit(Employee employee)
+    {
+        employeeIdToUpdate = employee.Id;
+        editName = employee.Name;
+        editDepartment = employee.Department;
+    }
+
+    private async Task UpdateEmployee(int id, string name, string department)
+    {
+        try
+        {
+            await employeeService.UpdateEmployeeAsync(id, name, department);
+            employees = await employeeService.GetEmployeesAsync();
+            employeeIdToUpdate = null;
+
+            errorMessage = "";
+        }
+        catch (KeyNotFoundException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+
+    }
+
+    private async Task SearchEmployee(string search)
+    {
+
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            searchMessage = "Please enter a value!";
+            hasSearched = false;
+            return;
+        }
+        employees = await employeeService.SearchEmployeesAsync(search);
+
+        hasSearched = true;
+        if(employees.Count == 0)
+        {
+            searchMessage = "There is no record";
+        }
+
+        else 
+        {
+            searchMessage = $"{employees.Count} record found out of {employeeCount} records.";
+ 
+        }
+
+        
     }
 }

@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 //Database işlemleri (buildten önce olmalı)
-builder.Services.AddDbContext<AppDbContext>(
+builder.Services.AddDbContextFactory<AppDbContext>(
     options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
     );
 //Employee service için de dependency injection
